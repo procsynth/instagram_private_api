@@ -2,6 +2,7 @@
 #
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
+# modified by adrianhuang
 
 # -*- coding: utf-8 -*-
 
@@ -205,6 +206,7 @@ class Client(object):
             return None
 
         m = hashlib.md5()
+        # modified by adrianhuang
         m.update('{variables}'.format(
             rhx_gis=self.rhx_gis,
             variables=variables
@@ -368,6 +370,7 @@ class Client(object):
 
         if not self.csrftoken:
             raise ClientError('Unable to get csrf from init request.')
+        # modified by adrianhuang
         # if not self.rhx_gis:
         #     raise ClientError('Unable to get rhx_gis from init request.')
         # required to avoid 403 when doing unauthenticated requests
