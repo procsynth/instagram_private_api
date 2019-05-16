@@ -246,9 +246,9 @@ class Client(object):
                 })
         if query:
             url += ('?' if '?' not in url else '&') + compat_urllib_parse.urlencode(query)
-            sig = self.generate_request_signature(query, url)
-            if sig:
-                headers['X-Instagram-GIS'] = sig
+            # sig = self.generate_request_signature(query, url)
+            # if sig:
+                # headers['X-Instagram-GIS'] = sig
 
         req = compat_urllib_request.Request(url, headers=headers)
         if get_method:
