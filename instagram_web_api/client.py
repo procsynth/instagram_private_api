@@ -205,7 +205,7 @@ class Client(object):
             return None
 
         m = hashlib.md5()
-        m.update('{rhx_gis}:{variables}'.format(
+        m.update('{variables}'.format(
             rhx_gis=self.rhx_gis,
             variables=variables
         ).encode('utf-8'))
@@ -368,8 +368,8 @@ class Client(object):
 
         if not self.csrftoken:
             raise ClientError('Unable to get csrf from init request.')
-        if not self.rhx_gis:
-            raise ClientError('Unable to get rhx_gis from init request.')
+        # if not self.rhx_gis:
+        #     raise ClientError('Unable to get rhx_gis from init request.')
         # required to avoid 403 when doing unauthenticated requests
         self.cookie_jar.set_cookie(
             compat_cookiejar.Cookie(
