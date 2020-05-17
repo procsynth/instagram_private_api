@@ -19,14 +19,25 @@ class ClientErrorCodes(object):
 class ClientError(Exception):
     """Generic error class, catch-all for most client issues.
     """
-    def __init__(self, msg, code=None, error_response=''):
+    def __init__(self, msg, code=None, error_response='', settings=''):
         self.code = code or 0
         self.error_response = error_response
+        self.settings = settings
         super(ClientError, self).__init__(msg)
 
     @property
     def msg(self):
         return self.args[0]
+
+
+class ClientTwoFactorRequiredError(ClientError):
+    """Raised when two factor authentication required"""
+    pass
+
+
+class ClientTwoFactorCodeInvalid(ClientError):
+    """Raised when two factor code invalid"""
+    pass
 
 
 class ClientLoginError(ClientError):
@@ -98,10 +109,11 @@ class ErrorHandler(object):
         {'patterns': ['challenge_required'], 'error': ClientChallengeRequiredError},
         {'patterns': ['sentry_block'], 'error': ClientSentryBlockError},
         {'patterns': ['feedback_required'], 'error': ClientFeedbackRequiredError},
+        {'patterns': ['sms_code_validation_code_invalid'], 'error': ClientTwoFactorCodeInvalid},
     ]
 
     @staticmethod
-    def process(http_error, error_response):
+    def process(http_error, error_response, settings=''):
         """
         Tries to process an error meaningfully
 
@@ -117,6 +129,13 @@ class ErrorHandler(object):
 
         try:
             error_obj = json.loads(error_response)
+
+            if 'two_factor_required' in error_obj and error_obj['two_factor_required']:
+                raise ClientTwoFactorRequiredError(
+                    error_msg, code=http_error.code,
+                    error_response=error_response, settings=settings
+                )
+
             error_message_type = error_obj.get('error_type', '') or error_obj.get('message', '')
             if http_error.code == ClientErrorCodes.TOO_MANY_REQUESTS:
                 raise ClientThrottledError(
@@ -128,7 +147,7 @@ class ErrorHandler(object):
                     if re.search(p, error_message_type):
                         raise error_info['error'](
                             error_message_type, code=http_error.code,
-                            error_response=json.dumps(error_obj)
+                            error_response=json.dumps(error_obj), settings=settings
                         )
             if error_message_type:
                 error_msg = '{0!s}: {1!s}'.format(http_error.reason, error_message_type)

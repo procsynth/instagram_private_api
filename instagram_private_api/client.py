@@ -45,7 +45,7 @@ from .endpoints import (
     CollectionsEndpointsMixin, HighlightsEndpointsMixin,
     IGTVEndpointsMixin,
     ClientDeprecationWarning, ClientPendingDeprecationWarning,
-    ClientExperimentalWarning
+    ClientExperimentalWarning, ChallengeEndpointsMixin
 )
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
              FriendshipsEndpointsMixin, LiveEndpointsMixin, MediaEndpointsMixin,
              MiscEndpointsMixin, LocationsEndpointsMixin, TagsEndpointsMixin,
              UsersEndpointsMixin, UploadEndpointsMixin, UsertagsEndpointsMixin,
-             CollectionsEndpointsMixin, HighlightsEndpointsMixin,
+             CollectionsEndpointsMixin, HighlightsEndpointsMixin, ChallengeEndpointsMixin,
              IGTVEndpointsMixin, object):
     """Main API client class for the private app api."""
 
@@ -71,7 +71,7 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
     SIG_KEY_VERSION = Constants.SIG_KEY_VERSION
     APPLICATION_ID = Constants.APPLICATION_ID
 
-    def __init__(self, username, password, **kwargs):
+    def __init__(self, username=None, password=None, **kwargs):
         """
 
         :param username: Login username
@@ -90,8 +90,6 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
             - **proxy_handler**: Specify your own proxy handler
         :return:
         """
-        self.username = username
-        self.password = password
         self.auto_patch = kwargs.pop('auto_patch', False)
         self.drop_incompat_keys = kwargs.pop('drop_incompat_keys', False)
         self.api_url = kwargs.pop('api_url', None) or self.API_URL
@@ -100,6 +98,8 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
         self.logger = logger
 
         user_settings = kwargs.pop('settings', None) or {}
+        self.username = username or user_settings.get('username')
+        self.password = password or user_settings.get('password')
         self.uuid = (
             kwargs.pop('guid', None) or kwargs.pop('uuid', None) or
             user_settings.get('uuid') or self.generate_uuid(False))
@@ -205,7 +205,7 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
         if not cookie_string:   # [TODO] There's probably a better way than to depend on cookie_string
             if not self.username or not self.password:
                 raise ClientLoginRequiredError('login_required', code=400)
-            self.login()
+            # if you get here, you have to call .login()
 
         self.logger.debug('USERAGENT: {0!s}'.format(self.user_agent))
         super(Client, self).__init__()
@@ -524,7 +524,7 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
         except compat_urllib_error.HTTPError as e:
             error_response = self._read_response(e)
             self.logger.debug('RESPONSE: {0:d} {1!s}'.format(e.code, error_response))
-            ErrorHandler.process(e, error_response)
+            ErrorHandler.process(e, error_response, self.settings)
 
         except (SSLError, timeout, SocketError,
                 compat_urllib_error.URLError,   # URLError is base of HTTPError

@@ -9,6 +9,7 @@ from ..errors import (
 )
 from ..http import MultipartFormDataEncoder
 from ..compatpatch import ClientCompatPatch
+from ..errors import ClientLoginRequiredError
 from socket import timeout, error as SocketError
 from ssl import SSLError
 try:
@@ -23,6 +24,9 @@ class AccountsEndpointsMixin(object):
 
     def login(self):
         """Login."""
+
+        if not self.username or not self.password:
+            raise ClientLoginRequiredError('login_required', code=400)
 
         prelogin_params = self._call_api(
             'si/fetch_headers/',
@@ -72,6 +76,64 @@ class AccountsEndpointsMixin(object):
         # self.direct_v2_inbox()
         # self.news_inbox()
         # self.explore()
+
+    def login2fa(self, identifier, code):
+        """Login into account with 2fa enabled."""
+
+        if not identifier or not code:
+            raise ClientLoginRequiredError('login_required', code=400)
+
+        login_params = {
+            'device_id': self.device_id,
+            '_csrftoken': self.csrftoken,
+            'username': self.username,
+            'password': self.password,
+            'two_factor_identifier': identifier,
+            'verification_code': code,
+        }
+
+        login_response = self._call_api(
+            'accounts/two_factor_login/', params=login_params, return_response=True)
+
+        if not self.csrftoken:
+            raise ClientError(
+                'Unable to get csrf from login.',
+                error_response=self._read_response(login_response))
+
+        login_json = json.loads(self._read_response(login_response))
+
+        if not login_json.get('logged_in_user', {}).get('pk'):
+            raise ClientLoginError('Unable to login.')
+
+        if self.on_login:
+            on_login_callback = self.on_login
+            on_login_callback(self)
+
+    def send_two_factor_login_sms(self, identifier):
+        """Request a new two factor login sms from Instagram"""
+
+        if not identifier:
+            raise ClientError('identifier is required to send two factor login code')
+
+        login_params = {
+            'device_id': self.device_id,
+            'guid': self.uuid,
+            '_csrftoken': self.csrftoken,
+            'username': self.username,
+            'two_factor_identifier': identifier,
+        }
+
+        response = self._call_api(
+            'accounts/send_two_factor_login_sms/', params=login_params, return_response=True)
+
+        if not self.csrftoken:
+            raise ClientError(
+                'Unable to get csrf from login.',
+                error_response=self._read_response(response))
+
+        response_json = json.loads(self._read_response(response))
+
+        return response_json
 
     def current_user(self):
         """Get current user info"""
