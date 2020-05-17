@@ -2,6 +2,7 @@
 #
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
+# modified by adrianhuang
 
 # -*- coding: utf-8 -*-
 
@@ -205,7 +206,8 @@ class Client(object):
             return None
 
         m = hashlib.md5()
-        m.update('{rhx_gis}:{variables}'.format(
+        # modified by adrianhuang
+        m.update('{variables}'.format(
             rhx_gis=self.rhx_gis,
             variables=variables
         ).encode('utf-8'))
@@ -244,9 +246,9 @@ class Client(object):
                 })
         if query:
             url += ('?' if '?' not in url else '&') + compat_urllib_parse.urlencode(query)
-            sig = self.generate_request_signature(query, url)
-            if sig:
-                headers['X-Instagram-GIS'] = sig
+            # sig = self.generate_request_signature(query, url)
+            # if sig:
+                # headers['X-Instagram-GIS'] = sig
 
         req = compat_urllib_request.Request(url, headers=headers)
         if get_method:
@@ -368,8 +370,9 @@ class Client(object):
 
         if not self.csrftoken:
             raise ClientError('Unable to get csrf from init request.')
-        if not self.rhx_gis:
-            raise ClientError('Unable to get rhx_gis from init request.')
+        # modified by adrianhuang
+        # if not self.rhx_gis:
+        #     raise ClientError('Unable to get rhx_gis from init request.')
         # required to avoid 403 when doing unauthenticated requests
         self.cookie_jar.set_cookie(
             compat_cookiejar.Cookie(
