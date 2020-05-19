@@ -480,9 +480,6 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
         else:
             res = response.read().decode('utf8')
         return res
-    
-    def _check_rate_limit(self):
-        pass
 
     def _call_api(self, endpoint, params=None, query=None, return_response=False, unsigned=False, version='v1'):
         """
@@ -519,8 +516,6 @@ class Client(AccountsEndpointsMixin, DiscoverEndpointsMixin, FeedEndpointsMixin,
                     post_params = params
                 data = compat_urllib_parse.urlencode(post_params).encode('ascii')
 
-        self._check_rate_limit()
-                
         req = compat_urllib_request.Request(url, data, headers=headers)
         try:
             self.logger.debug('REQUEST: {0!s} {1!s}'.format(url, req.get_method()))
